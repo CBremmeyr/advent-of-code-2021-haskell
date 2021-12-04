@@ -7,12 +7,14 @@ module Main where
 
 import System.IO
 import Control.Monad
+import Data.List
+import Data.Char
 
-f :: [String] -> [(String, Int)]
-f xs = map mapper xs
-     where 
-        mapper x = (head x_split, read (last x_split) :: Int)
-                   where x_split = words x
+f :: [Char] -> [Int]
+f xs = map (\x -> (digitToInt x)) xs
+--      where 
+--         mapper x = (head x_split, read (last x_split) :: Int)
+--                    where x_split = words x
 
 main = do
 
@@ -20,32 +22,34 @@ main = do
     let input = []
     handle <- openFile "input.txt" ReadMode
     contents <- hGetContents handle
-    let singlelines = lines contents
-        input = f singlelines
+    let lines_list = lines contents
+        input = map f lines_list
     -- print input
 
-    -- Day 1.1
-    -- let result = countTrues (isBigger input)
-    -- print result
-
-    -- Day 1.2
-    -- let result = countTrues (isBigger (slidingSum 3 input))
-    -- print result
-
-    -- Day 2.1
-    -- let forward_sum = sumDirs "forward" input
-    -- let down_sum    = sumDirs "down" input
-    -- let up_sum      = sumDirs "up" input
-
-    -- print (forward_sum * (down_sum - up_sum))
-
-    -- Day 2.2
-    let pos = get_pos input
-    print pos
-    print ((fst pos) * (snd pos))
+    -- Day 3.1
+    print (calc_pow input)
 
     -- Clean up stuff
     hClose handle
+
+-- Day 3 stuff
+calc_pow :: [[Int]] -> Int
+calc_pow xs = (ge_rate (> 0.5) col_avgs) * (ge_rate (< 0.5) col_avgs)
+              where col_avgs = col_avg xs
+
+
+ge_rate :: (Double -> Bool) -> [Double] -> Int
+ge_rate comp xs = toDec bin_str
+                  where bin_str = map
+                            (\x -> if (comp x) then '1' else '0')
+                            xs
+
+col_avg :: [[Int]] -> [Double]
+col_avg xs = map (\row -> doubleDiv (sum row) (length row)) ys
+         where 
+            ys = transpose xs
+            doubleDiv a b = fromIntegral a / fromIntegral b
+            
 
 -- Day 2 stuff
 sumDirs :: String -> [(String, Int)] -> Int
@@ -90,3 +94,6 @@ snd3 (_, x, _) = x
 
 thd3 :: (a, b, c) -> c
 thd3 (_, _, x) = x
+
+toDec :: String -> Int
+toDec = foldl' (\acc x -> acc * 2 + digitToInt x) 0
