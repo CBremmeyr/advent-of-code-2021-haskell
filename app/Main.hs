@@ -12,9 +12,6 @@ import Data.Char
 
 f :: [Char] -> [Int]
 f xs = map (\x -> (digitToInt x)) xs
---      where 
---         mapper x = (head x_split, read (last x_split) :: Int)
---                    where x_split = words x
 
 main = do
 
@@ -26,17 +23,42 @@ main = do
         input = map f lines_list
     -- print input
 
-    -- Day 3.1
-    print (calc_pow input)
+    -- Day 3.2
+    print ((o2_gen input) * (co2_gen input))
 
     -- Clean up stuff
     hClose handle
 
 -- Day 3 stuff
+o2_gen :: [[Int]] -> Int
+o2_gen xs = get_ls_rate (>=) xs
+
+co2_gen :: [[Int]] -> Int
+co2_gen xs = get_ls_rate (<) xs
+
+get_ls_rate :: (Int -> Int -> Bool) -> [[Int]] -> Int
+get_ls_rate comp xs = toDec (map (\x -> if x == 1 then '1' else '0') res)
+                      where res = (filter_step 0 (comp) xs) !! 0
+
+filter_step :: Int -> (Int -> Int -> Bool) -> [[Int]] -> [[Int]]
+filter_step n f (x:[]) = [x]
+filter_step n comp xs = filter_step (n+1) comp (filter keeper_func xs)
+                        where
+                            keeper_func = \x -> (x !! n) == keeper
+                            keeper = if comp (col_1s xs n) (col_0s xs n)
+                                     then 1 else 0
+
+col_1s :: [[Int]] -> Int -> Int
+col_1s xs n = sum (ys !! n)
+              where ys = transpose xs
+
+col_0s :: [[Int]] -> Int -> Int
+col_0s xs n = length (ys !! n) - sum (ys !! n)
+              where ys = transpose xs
+
 calc_pow :: [[Int]] -> Int
 calc_pow xs = (ge_rate (> 0.5) col_avgs) * (ge_rate (< 0.5) col_avgs)
               where col_avgs = col_avg xs
-
 
 ge_rate :: (Double -> Bool) -> [Double] -> Int
 ge_rate comp xs = toDec bin_str
