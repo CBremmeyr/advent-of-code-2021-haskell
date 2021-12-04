@@ -10,8 +10,15 @@ import Control.Monad
 import Data.List
 import Data.Char
 
-f :: [Char] -> [Int]
-f xs = map (\x -> (digitToInt x)) xs
+parse_boards :: [String] -> [[[(Int, Bool)]]]
+parse_boards xs = map (mapper) (paragraphs xs)
+                  where
+                    mapper xs = map (\x -> map conv (words x)) xs
+                    conv x = (read x :: Int, False)
+
+
+paragraphs :: [String] -> [[String]]
+paragraphs ls = map (filter (/= "")) (groupBy (\x y -> y /= "") ls)
 
 main = do
 
@@ -20,14 +27,38 @@ main = do
     handle <- openFile "input.txt" ReadMode
     contents <- hGetContents handle
     let lines_list = lines contents
-        input = map f lines_list
-    -- print input
 
-    -- Day 3.2
-    print ((o2_gen input) * (co2_gen input))
+    let seq = wordsWhen (== ',') (lines_list !! 0)
+    let boards = tail $ parse_boards $ lines_list
+
+    -- print seq 
+    print boards 
+
+    -- Day 4.1
 
     -- Clean up stuff
     hClose handle
+
+-- Day 4 stuff
+
+-- take list of boards,
+-- find val(s) in boards & mark it found
+-- check for win conditions
+--
+-- draw new num, update boards, if no win, recurse
+
+-- TODO: pick back up here
+-------------------------------------------------------------------
+--         winning board      score
+scoring :: [[(Int, Bool)]] -> Int
+
+--       seq      game boards          winning board
+bingo :: [Int] -> [[[(Int, Bool)]]] -> [[(Int, Bool)]]
+
+where
+ball = head seq -- tail seq when recursing
+mark_boards b xs =  -- probably need nested maps to get to board valse and set flags
+-------------------------------------------------------------------
 
 -- Day 3 stuff
 o2_gen :: [[Int]] -> Int
@@ -119,3 +150,9 @@ thd3 (_, _, x) = x
 
 toDec :: String -> Int
 toDec = foldl' (\acc x -> acc * 2 + digitToInt x) 0
+
+wordsWhen :: (Char -> Bool) -> String -> [String]
+wordsWhen p s = case dropWhile p s of
+                     "" -> []
+                     s' -> w : wordsWhen p s''
+                           where (w, s'') = break p s'
