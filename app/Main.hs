@@ -28,36 +28,75 @@ main = do
     contents <- hGetContents handle
     let lines_list = lines contents
 
-    let seq = wordsWhen (== ',') (lines_list !! 0)
+    let seq = map (\x -> read x :: Int) (wordsWhen (== ',') (lines_list !! 0))
     let boards = tail $ parse_boards $ lines_list
 
-    -- print seq 
-    print boards 
-
     -- Day 4.1
+    -- print (scoring (bingo seq boards))
+
+    -- Day 4.2
+    print (bingo_loser seq boards)
+    print (scoring (bingo_loser seq boards))
 
     -- Clean up stuff
     hClose handle
 
 -- Day 4 stuff
-
--- take list of boards,
--- find val(s) in boards & mark it found
--- check for win conditions
---
--- draw new num, update boards, if no win, recurse
-
--- TODO: pick back up here
 -------------------------------------------------------------------
+-- score = sum of all (xs, False) times last n from sequence
 --         winning board      score
-scoring :: [[(Int, Bool)]] -> Int
+scoring :: (Int, [[(Int, Bool)]]) -> Int
+-- flatten, filter out trues, extract Ints, sum, multiply
+-- scoring n xss = 
+--                 concat xss
+--                 filter (\x -> not (snd x)) ^
+--                 map (\x -> fst x) ^
+--                 n * sum ^
+scoring (n, xss) = n * sum (map (\x -> fst x) (filter (\x -> not (snd x)) (concat xss)))
 
+-- Finds last winning bingo board
+bingo_loser :: [Int] -> [[[(Int, Bool)]]] -> (Int, [[(Int, Bool)]])
+bingo_loser (n:ns) xsss = 
+                if length no_winners == 1 then
+                    ((head ns), bingo_turn (head ns) (head no_winners))
+                else
+                    bingo_loser ns no_winners
+                where 
+                    new_boards = map (\xs -> bingo_turn n xs) xsss
+                    no_winners = filter (\x -> not (check_win x)) new_boards 
+
+-- Find first winning bingo board with the given sequence of ball draws
+-- bingo_turn, if check_win then return current board else recurse to next board
 --       seq      game boards          winning board
-bingo :: [Int] -> [[[(Int, Bool)]]] -> [[(Int, Bool)]]
+bingo :: [Int] -> [[[(Int, Bool)]]] -> (Int, [[(Int, Bool)]])
+bingo (n:ns) xsss = 
+                -- if there was no win, recurse apply the next value in sequence
+                if null winner then 
+                    bingo ns new_boards
+                -- else return winning board
+                else (n, winner)
+                where
+                    new_boards = map (\xs -> bingo_turn n xs) xsss
+                    winner = get_winner new_boards
 
-where
-ball = head seq -- tail seq when recursing
-mark_boards b xs =  -- probably need nested maps to get to board valse and set flags
+-- If inner Int int 2D list matches Int then set list ele to True
+-- Return updated list
+bingo_turn :: Int -> [[(Int, Bool)]] -> [[(Int, Bool)]]
+bingo_turn n xss = map (mapper) xss
+                   where mapper xs = map (\(x, f) -> (x, if f then True else n == x)) xs
+
+-- Get first winning board in list
+get_winner :: [[[(Int, Bool)]]] -> [[(Int, Bool)]]
+get_winner [] = []
+get_winner (xss:xsss) = if check_win xss then xss else get_winner xsss
+
+-- Check if a bingo board has won
+-- Win if any row or column is all (_,True), diags don't count
+check_win :: [[(Int, Bool)]] -> Bool
+check_win xss = or (row_res ++ col_res)
+                where row_res = map (check_row) xss
+                      col_res = map (check_row) (transpose xss)
+                      check_row xs = and (map (snd) xs)
 -------------------------------------------------------------------
 
 -- Day 3 stuff
